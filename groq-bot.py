@@ -66,6 +66,8 @@ def fetch_title_and_body(url):
     # Yahoo Newsの場合、特定のクラスを持つ段落のみを取得
     if "news.yahoo.co.jp" in url:
         paragraphs = driver.find_elements(By.CSS_SELECTOR, 'p.sc-54nboa-0.deLyrJ.yjSlinkDirectlink.highLightSearchTarget')
+    elif "www.lifehacker.jp" in url:
+        paragraphs = driver.find_elements(By.CSS_SELECTOR, '.article_pArticle_Body__KWzIr.article_pArticle_Body.postContent')  
     else:
         # その他のサイトの場合、全ての段落を取得
         paragraphs = driver.find_elements(By.TAG_NAME, 'p')
