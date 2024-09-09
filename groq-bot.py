@@ -54,6 +54,7 @@ def fetch_title_and_body(url):
     # Seleniumの設定
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # ヘッドレスモードで実行
+    chrome_options.add_argument("--ignore-certificate-errors")  # SSLエラーを無視
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
     
     driver.get(url)
@@ -86,7 +87,7 @@ def summarize_text(title, body):
 
     # システムプロンプト (要約内容に関する詳細な指示)
     system_prompt = (
-     "Please always reply in Japanese.!!!!!!! It is the most important thing."
+     "Please always only reply in Japanese.!!!!!!! It is the most important thing."
     "Please include the title and main points of the text in your summary so that it can be understood without reading the text."
     "Avoid subjective opinions or unnecessary details."
     "Focus on the most important factual information."
@@ -100,7 +101,7 @@ def summarize_text(title, body):
     print(f"summarize_text: プロンプトを作成 - {prompt[:100]}...")  # プロンプトの最初の100文字を表示
     
     # Groq APIへ要約リクエスト
-    response = groq_client.chat.completions.create(model=model, messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": body}], max_tokens=100, temperature=1.2)
+    response = groq_client.chat.completions.create(model=model, messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": body}], max_tokens=8000, temperature=1.2)
     print(f"summarize_text: APIレスポンス - {response}")
 
     # レスポンスに'choices'フィールドが存在するか確認
