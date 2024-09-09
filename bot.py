@@ -21,8 +21,13 @@ from linebot.v3.webhooks import (
     MessageEvent,
     TextMessageContent
 )
-
 from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+
 # .env ファイルを読み込む
 load_dotenv()
 
@@ -38,22 +43,33 @@ handler = WebhookHandler(channel_secret)
 # URLのタイトルと本文を取得する関数
 def fetch_title_and_body(url):
     print(f"fetch_title_and_body: URLを取得中 - {url}")
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-
+    
+    # Seleniumの設定
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # ヘッドレスモードで実行
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+    
+    driver.get(url)
+    
     # ページタイトルを取得
-    title = soup.title.string if soup.title else "No Title"
+    title = driver.title
     print(f"fetch_title_and_body: タイトルを取得 - {title}")
-
-    # 本文を特定のタグやクラスから抽出
-    article_body = soup.find('div', {'class': 'ArticleBody__content___2gQno'})
-    if article_body:
-        paragraphs = article_body.find_all('p')
-        body = '\n'.join([p.get_text() for p in paragraphs])
+    
+    # Yahoo Newsの場合、特定のクラスを持つ段落のみを取得
+    if "news.yahoo.co.jp" in url:
+        paragraphs = driver.find_elements(By.CSS_SELECTOR, 'p.sc-54nboa-0.deLyrJ.yjSlinkDirectlink.highLightSearchTarget')
+    else:
+        # その他のサイトの場合、全ての段落を取得
+        paragraphs = driver.find_elements(By.TAG_NAME, 'p')
+    
+    if paragraphs:
+        body = '\n'.join([p.text for p in paragraphs])
     else:
         body = "本文を取得できませんでした。"
     print(f"fetch_title_and_body: 本文を取得 - {body[:100]}...")  # 本文の最初の100文字を表示
-
+    
+    driver.quit()
+    
     return title, body
 
 # Ollama APIを使ってテキストを要約する関数
@@ -63,13 +79,12 @@ def summarize_text(title, body):
 
     # システムプロンプト (要約内容に関する詳細な指示)
     system_prompt = (
-    "Please reply in Japanese."
-    "Please summarize the following text in three lines or less."
-    "Please be concise and include key points in your summary."
+     "Please always reply in Japanese.!!!!!!! It is the most important thing."
     "Please include the title and main points of the text in your summary so that it can be understood without reading the text."
-    "Ensure that the summary is coherent and logically structured."
     "Avoid subjective opinions or unnecessary details."
     "Focus on the most important factual information."
+    "Please summarize the following text in four lines or less."
+    "Use only what the text says, not your knowledge."
     )
 
     
